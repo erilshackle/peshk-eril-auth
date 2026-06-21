@@ -4,7 +4,7 @@ namespace Eril\Auth\Authorization;
 
 use Eril\Auth\Auth\AuthManager;
 use Eril\Auth\Configuration\AuthConfig;
-use RuntimeException;
+use Eril\Auth\Exceptions\AuthorizationException;
 
 final class Authorization
 {
@@ -28,14 +28,14 @@ final class Authorization
     public static function authorize(string $permission): void
     {
         if (self::cannot($permission)) {
-            throw new RuntimeException("Unauthorized permission [{$permission}].");
+            throw new AuthorizationException("Unauthorized permission [{$permission}].");
         }
     }
 
     private static function manager(): PermissionResolver
     {
         if (!self::$manager) {
-            throw new RuntimeException('Authorization is not configured.');
+            throw new AuthorizationException('Authorization is not configured.');
         }
 
         return self::$manager;

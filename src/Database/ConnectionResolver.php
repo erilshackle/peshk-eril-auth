@@ -2,6 +2,7 @@
 
 namespace Eril\Auth\Database;
 
+use Eril\Auth\Exceptions\ConfigurationException;
 use PDO;
 
 final class ConnectionResolver
@@ -30,6 +31,6 @@ final class ConnectionResolver
             }
         }
 
-        throw new \RuntimeException('Invalid PDO configuration.');
+        throw new ConfigurationException('Invalid PDO configuration.');
     }
 }

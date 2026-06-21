@@ -2,6 +2,7 @@
 
 namespace Eril\Auth\Configuration;
 
+use Eril\Auth\Exceptions\ConfigurationException;
 use Eril\Auth\Support\SqlIdentifier;
 use InvalidArgumentException;
 
@@ -26,7 +27,7 @@ final class AuthConfig
         private readonly int $rememberDays = 7,
     ) {
         if ($this->db === null) {
-            throw new InvalidArgumentException('Auth database connection [db] is required.');
+            throw new ConfigurationException('Auth database connection [db] is required.');
         }
 
         SqlIdentifier::validate($this->userTable, 'user_table');
@@ -39,19 +40,19 @@ final class AuthConfig
         SqlIdentifier::nullable($this->rememberSelectorField, 'remember_selector_field');
 
         if ($this->sessionName === '') {
-            throw new InvalidArgumentException('Auth session_name cannot be empty.');
+            throw new ConfigurationException('Auth session_name cannot be empty.');
         }
 
         if ($this->sessionLifetime < 1) {
-            throw new InvalidArgumentException('Auth session_lifetime must be greater than zero.');
+            throw new ConfigurationException('Auth session_lifetime must be greater than zero.');
         }
 
         if ($this->rememberDays < 1) {
-            throw new InvalidArgumentException('Auth remember_days must be greater than zero.');
+            throw new ConfigurationException('Auth remember_days must be greater than zero.');
         }
 
         if ($this->rememberEnabled && $this->rememberTokenField === null) {
-            throw new InvalidArgumentException(
+            throw new ConfigurationException(
                 'remember_token_field cannot be null when remember_enabled is true.'
             );
         }

@@ -7,6 +7,7 @@ use Eril\Auth\Auth\AuthUser;
 use Eril\Auth\Authorization\Authorization;
 use Eril\Auth\Configuration\AuthConfig;
 use Eril\Auth\Database\ConnectionResolver;
+use Eril\Auth\Exceptions\ConfigurationException;
 use Eril\Auth\Session\SessionManager;
 use InvalidArgumentException;
 use RuntimeException;
@@ -131,7 +132,7 @@ final class Auth
      * Auth::loadConfig(__DIR__ . '/config/auth.php');
      *
      * @throws InvalidArgumentException
-     * @throws RuntimeException
+     * @throws ConfigurationException
      */
     public static function loadConfig(string $path): void
     {
@@ -142,7 +143,7 @@ final class Auth
         $config = require $path;
 
         if (!is_array($config)) {
-            throw new RuntimeException('Auth config file must return an array.');
+            throw new ConfigurationException('Auth config file must return an array.');
         }
 
         self::configure($config);
@@ -255,7 +256,7 @@ final class Auth
     private static function manager(): AuthManager
     {
         if (!self::$manager) {
-            throw new RuntimeException('Auth is not configured. Call Auth::configure() first.');
+            throw new ConfigurationException('Auth is not configured. Call Auth::configure() first.');
         }
 
         return self::$manager;
