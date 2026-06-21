@@ -21,7 +21,9 @@ final class AuthManager
 
     public function boot(): void
     {
-        $this->session->start();
+        $this->session->start(
+            $this->config->sessionLifetime()
+        );
 
         if (!$this->check() && $this->config->rememberEnabled()) {
             $this->remember->attemptAutoLogin($this);
