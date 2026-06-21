@@ -2,6 +2,7 @@
 
 namespace Eril\Auth;
 
+use Eril\Auth\Migration\AuthMigration;
 use PDO;
 
 final class AuthManager
@@ -168,88 +169,12 @@ final class AuthManager
         return $this->pdo->get();
     }
 
-
     public function diagnose(): array
     {
-        $checks = [];
-
-        $checks['pdo'] = [
-            'ok' => $this->pdo->get() instanceof \PDO,
-            'message' => 'PDO connection resolved successfully.',
-        ];
-
-        $checks['session'] = [
-            'ok' => session_status() === PHP_SESSION_ACTIVE,
-            'message' => session_status() === PHP_SESSION_ACTIVE
-                ? 'Session is active.'
-                : 'Session is not active.',
-        ];
-
-        $checks['user_table'] = [
-            'ok' => $this->tableExists($this->config->userTable()),
-            'message' => "User table [{$this->config->userTable()}] exists.",
-        ];
-
-        $requiredColumns = [
-            $this->config->idField(),
-            $this->config->loginField(),
-            $this->config->passwordField(),
-            $this->config->nameField(),
-        ];
-
-        if ($this->config->roleField()) {
-            $requiredColumns[] = $this->config->roleField();
-        }
-
-        if ($this->config->rememberEnabled() && $this->config->rememberTokenField()) {
-            $requiredColumns[] = $this->config->rememberTokenField();
-        }
-
-        foreach (array_unique($requiredColumns) as $column) {
-            $checks["column:{$column}"] = [
-                'ok' => $this->columnExists($this->config->userTable(), $column),
-                'message' => "Column [{$column}] exists in [{$this->config->userTable()}].",
-            ];
-        }
-
-        $checks['password_algo'] = [
-            'ok' => defined('PASSWORD_DEFAULT'),
-            'message' => 'Password hashing API is available.',
-        ];
-
-        $checks['remember'] = [
-            'ok' => !$this->config->rememberEnabled()
-                || $this->config->rememberTokenField() !== null,
-            'message' => $this->config->rememberEnabled()
-                ? 'Remember-me is enabled.'
-                : 'Remember-me is disabled.',
-        ];
-
-        return [
-            'ok' => !in_array(false, array_column($checks, 'ok'), true),
-            'checks' => $checks,
-        ];
-    }
-
-    private function tableExists(string $table): bool
-    {
-        try {
-            $stmt = $this->db()->query("SELECT 1 FROM {$table} LIMIT 1");
-
-            return $stmt !== false;
-        } catch (\Throwable) {
-            return false;
-        }
-    }
-
-    private function columnExists(string $table, string $column): bool
-    {
-        try {
-            $stmt = $this->db()->query("SELECT {$column} FROM {$table} LIMIT 1");
-
-            return $stmt !== false;
-        } catch (\Throwable) {
-            return false;
-        }
+        return (new AuthDiagnostic(
+            config: $this->config,
+            pdo: $this->pdo,
+            session: $this->session,
+        ))->run();
     }
 }
