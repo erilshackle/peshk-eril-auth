@@ -1,6 +1,6 @@
 <?php
 
-namespace Eril\Auth;
+namespace Eril\Auth\Configuration;
 
 use Eril\Auth\Support\SqlIdentifier;
 use InvalidArgumentException;

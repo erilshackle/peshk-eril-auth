@@ -1,16 +1,18 @@
 <?php
 
-namespace Eril\Auth;
+namespace Eril\Auth\Authorization;
 
+use Eril\Auth\Auth\AuthManager;
+use Eril\Auth\Configuration\AuthConfig;
 use RuntimeException;
 
 final class Authorization
 {
-    private static ?AuthorizationManager $manager = null;
+    private static ?PermissionResolver $manager = null;
 
     public static function configure(AuthConfig $config, AuthManager $auth): void
     {
-        self::$manager = new AuthorizationManager($config, $auth);
+        self::$manager = new PermissionResolver($config, $auth);
     }
 
     public static function can(string $permission): bool
@@ -30,7 +32,7 @@ final class Authorization
         }
     }
 
-    private static function manager(): AuthorizationManager
+    private static function manager(): PermissionResolver
     {
         if (!self::$manager) {
             throw new RuntimeException('Authorization is not configured.');

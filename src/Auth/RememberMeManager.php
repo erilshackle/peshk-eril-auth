@@ -1,14 +1,16 @@
 <?php
 
-namespace Eril\Auth;
+namespace Eril\Auth\Auth;
 
+use Eril\Auth\Configuration\AuthConfig;
+use Eril\Auth\Database\ConnectionResolver;
 use PDO;
 
 final class RememberMeManager
 {
     public function __construct(
         private readonly AuthConfig $config,
-        private readonly PdoResolver $pdo,
+        private readonly ConnectionResolver $pdo,
     ) {}
 
     public function remember(?AuthUser $user): void

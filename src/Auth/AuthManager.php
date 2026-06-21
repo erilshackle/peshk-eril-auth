@@ -1,8 +1,11 @@
 <?php
 
-namespace Eril\Auth;
+namespace Eril\Auth\Auth;
 
-use Eril\Auth\Migration\AuthMigration;
+use Eril\Auth\Configuration\AuthConfig;
+use Eril\Auth\Database\ConnectionResolver;
+use Eril\Auth\Diagnostics\AuthDiagnostic;
+use Eril\Auth\Session\SessionManager;
 use PDO;
 
 final class AuthManager
@@ -13,7 +16,7 @@ final class AuthManager
 
     public function __construct(
         private readonly AuthConfig $config,
-        private readonly PdoResolver $pdo,
+        private readonly ConnectionResolver $pdo,
         private readonly SessionManager $session,
     ) {
         $this->remember = new RememberMeManager($this->config, $this->pdo);

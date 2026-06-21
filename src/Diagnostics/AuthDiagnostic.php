@@ -1,7 +1,10 @@
 <?php
 
-namespace Eril\Auth;
+namespace Eril\Auth\Diagnostics;
 
+use Eril\Auth\Configuration\AuthConfig;
+use Eril\Auth\Database\ConnectionResolver;
+use Eril\Auth\Session\SessionManager;
 use PDO;
 use Throwable;
 
@@ -9,7 +12,7 @@ final class AuthDiagnostic
 {
     public function __construct(
         private readonly AuthConfig $config,
-        private readonly PdoResolver $pdo,
+        private readonly ConnectionResolver $pdo,
         private readonly SessionManager $session,
     ) {}
 

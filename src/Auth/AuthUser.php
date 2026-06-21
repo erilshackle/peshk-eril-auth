@@ -1,6 +1,6 @@
 <?php
 
-namespace Eril\Auth;
+namespace Eril\Auth\Auth;
 
 use JsonSerializable;
 

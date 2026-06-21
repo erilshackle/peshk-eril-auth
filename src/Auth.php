@@ -2,6 +2,12 @@
 
 namespace Eril\Auth;
 
+use Eril\Auth\Auth\AuthManager;
+use Eril\Auth\Auth\AuthUser;
+use Eril\Auth\Authorization\Authorization;
+use Eril\Auth\Configuration\AuthConfig;
+use Eril\Auth\Database\ConnectionResolver;
+use Eril\Auth\Session\SessionManager;
 use InvalidArgumentException;
 use RuntimeException;
 
@@ -102,7 +108,7 @@ final class Auth
     public static function configure(array $config): void
     {
         $authConfig = AuthConfig::fromArray($config);
-        $pdo = new PdoResolver($authConfig->db());
+        $pdo = new ConnectionResolver($authConfig->db());
 
         self::$manager = new AuthManager(
             config: $authConfig,

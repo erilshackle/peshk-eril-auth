@@ -1,8 +1,11 @@
 <?php
 
-namespace Eril\Auth;
+namespace Eril\Auth\Authorization;
 
-final class AuthorizationManager
+use Eril\Auth\Auth\AuthManager;
+use Eril\Auth\Configuration\AuthConfig;
+
+final class PermissionResolver
 {
     public function __construct(
         private readonly AuthConfig $config,

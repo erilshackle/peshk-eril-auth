@@ -1,10 +1,10 @@
 <?php
 
-namespace Eril\Auth;
+namespace Eril\Auth\Database;
 
 use PDO;
 
-final class PdoResolver
+final class ConnectionResolver
 {
     private ?PDO $resolved = null;
 
