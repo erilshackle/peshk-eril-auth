@@ -92,13 +92,7 @@ final class AuthManager
 
     public function hasRole(string $role, string ...$roles): bool
     {
-        $current = $this->user()?->role();
-
-        if (!$current) {
-            return false;
-        }
-
-        return in_array($current, [$role, ...$roles], true);
+        return $this->user()?->hasRole($role, ...$roles) ?? false;
     }
 
     public function rememberUser(): void
