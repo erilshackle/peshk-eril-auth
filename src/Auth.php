@@ -42,6 +42,7 @@ final class Auth
      *     login_field?:string,
      *     password_field?:string,
      *     role_field?:string|null,
+     *     permissions?:array,
      *     session_name?:string,
      *     session_lifetime?:int,
      *     remember_enabled?:bool,
@@ -108,6 +109,8 @@ final class Auth
             pdo: $pdo,
             session: new SessionManager(),
         );
+
+        Authorization::configure($authConfig, self::$manager);
 
         self::$manager->boot();
     }
@@ -197,6 +200,21 @@ final class Auth
     public static function hasRole(string $role, string ...$roles): bool
     {
         return self::manager()->hasRole($role, ...$roles);
+    }
+
+    public static function can(string $permission): bool
+    {
+        return Authorization::can($permission);
+    }
+
+    public static function cannot(string $permission): bool
+    {
+        return Authorization::cannot($permission);
+    }
+
+    public static function authorize(string $permission): void
+    {
+        Authorization::authorize($permission);
     }
 
     /**

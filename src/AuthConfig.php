@@ -7,6 +7,7 @@ use InvalidArgumentException;
 
 final class AuthConfig
 {
+    
     public function __construct(
         private readonly mixed $db,
         private readonly string $userTable = 'users',
@@ -15,6 +16,7 @@ final class AuthConfig
         private readonly string $idField = 'id',
         private readonly string $nameField = 'name',
         private readonly ?string $roleField = 'role',
+        private readonly array $permissions = [],
         private readonly string $sessionName = 'auth_user',
         private readonly int $sessionLifetime = 3600,
         private readonly bool $rememberEnabled = true,
@@ -87,6 +89,7 @@ final class AuthConfig
             idField: $config['id_field'] ?? 'id',
             nameField: $config['name_field'] ?? 'name',
             roleField: $config['role_field'] ?? 'role',
+            permissions: $config['permissions'] ?? [],
             sessionName: $config['session_name'] ?? 'auth_user',
             sessionLifetime: $config['session_lifetime'] ?? 3600,
             rememberEnabled: $config['remember_enabled'] ?? true,
@@ -110,6 +113,8 @@ final class AuthConfig
     public function nameField(): string { return $this->nameField; }
 
     public function roleField(): ?string { return $this->roleField; }
+    
+    public function permissions(): array { return $this->permissions; }
 
     public function sessionName(): string { return $this->sessionName; }
 
