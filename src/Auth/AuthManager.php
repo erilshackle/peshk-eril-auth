@@ -8,6 +8,7 @@ use Eril\Auth\Diagnostics\AuthDiagnostic;
 use Eril\Auth\Profile\Profile;
 use Eril\Auth\Profile\ProfileResolver;
 use Eril\Auth\Providers\ProviderLoginManager;
+use Eril\Auth\Providers\ProviderLosginManager;
 use Eril\Auth\Session\SessionManager;
 use PDO;
 

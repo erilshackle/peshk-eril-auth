@@ -3,50 +3,61 @@
 namespace Eril\Auth\Tests;
 
 use Eril\Auth\Auth\AuthManager;
-use Eril\Auth\Auth\AuthUser;
 use Eril\Auth\Authorization\PermissionResolver;
 use Eril\Auth\Configuration\AuthConfig;
+use Eril\Auth\Database\ConnectionResolver;
+use Eril\Auth\Session\SessionManager;
+use PDO;
 use PHPUnit\Framework\TestCase;
 
-/**
- * 
- * @ignore 
- */
 final class PermissionResolverTest extends TestCase
 {
+    protected function setUp(): void
+    {
+        $_SESSION = [];
+    }
+
     public function test_it_allows_exact_permission(): void
     {
-        $manager = $this->managerForRole('patient');
+        $resolver = $this->resolverForRole('patient');
 
-        $this->assertTrue($manager->can('profile.view'));
+        $this->assertTrue($resolver->can('profile.view'));
     }
 
     public function test_it_allows_wildcard_permission(): void
     {
-        $manager = $this->managerForRole('professional');
+        $resolver = $this->resolverForRole('professional');
 
-        $this->assertTrue($manager->can('appointments.create'));
-        $this->assertTrue($manager->can('appointments.delete'));
+        $this->assertTrue($resolver->can('appointments.create'));
+        $this->assertTrue($resolver->can('appointments.delete'));
     }
 
     public function test_it_allows_global_wildcard(): void
     {
-        $manager = $this->managerForRole('admin');
+        $resolver = $this->resolverForRole('admin');
 
-        $this->assertTrue($manager->can('anything.delete'));
+        $this->assertTrue($resolver->can('anything.delete'));
     }
 
     public function test_it_denies_missing_permission(): void
     {
-        $manager = $this->managerForRole('patient');
+        $resolver = $this->resolverForRole('patient');
 
-        $this->assertFalse($manager->can('admin.access'));
+        $this->assertFalse($resolver->can('admin.access'));
     }
 
-    private function managerForRole(string $role): PermissionResolver
+    public function test_it_denies_when_user_has_no_role(): void
+    {
+        $resolver = $this->resolverForRole(null);
+
+        $this->assertFalse($resolver->can('profile.view'));
+    }
+
+    private function resolverForRole(?string $role): PermissionResolver
     {
         $config = AuthConfig::fromArray([
-            'db' => fn () => null,
+            'db' => new PDO('sqlite::memory:'),
+
             'permissions' => [
                 'admin' => ['*'],
                 'professional' => ['appointments.*'],
@@ -54,11 +65,18 @@ final class PermissionResolverTest extends TestCase
             ],
         ]);
 
-        $auth = $this->createMock(AuthManager::class);
-
-        $auth->method('user')->willReturn(
-            new AuthUser(['role' => $role])
+        $auth = new AuthManager(
+            config: $config,
+            pdo: new ConnectionResolver($config->db()),
+            session: new SessionManager(),
         );
+
+        $auth->login([
+            'id' => 1,
+            'name' => 'Test User',
+            'email' => 'test@example.com',
+            'role' => $role,
+        ]);
 
         return new PermissionResolver($config, $auth);
     }
