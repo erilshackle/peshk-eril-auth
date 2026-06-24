@@ -6,8 +6,10 @@ use Eril\Auth\Auth\AuthManager;
 use Eril\Auth\Auth\AuthUser;
 use Eril\Auth\Authorization\Authorization;
 use Eril\Auth\Configuration\AuthConfig;
+use Eril\Auth\Configuration\ConfigPublisher;
 use Eril\Auth\Database\ConnectionResolver;
 use Eril\Auth\Exceptions\ConfigurationException;
+use Eril\Auth\Profile\Profile;
 use Eril\Auth\Session\SessionManager;
 use InvalidArgumentException;
 use RuntimeException;
@@ -49,7 +51,8 @@ final class Auth
      *     login_field?:string,
      *     password_field?:string,
      *     role_field?:string|null,
-     *     permissions?:array,
+     *     profiles?:array<array{table:string, foreign_key:string}>,
+     *     permissions?:array<array<string>>,
      *     session_name?:string,
      *     session_lifetime?:int,
      *     remember_enabled?:bool,
@@ -58,7 +61,7 @@ final class Auth
      *     remember_selector_field?:string|null,
      *     remember_days?:int
      * } $config
-     *
+     * array<string, array{ok:bool, message:string}>
      * Option details:
      *
      * - db:
@@ -127,17 +130,31 @@ final class Auth
      *
      * The file must return an array accepted by Auth::configure().
      *
+     * If $createIfMissing is true and the file does not exist, a default
+     * auth.php file will be created. When the generated auth.php references
+     * permissions.php, that file will also be created in the same directory.
+     *
      * Example:
      *
      * Auth::loadConfig(__DIR__ . '/config/auth.php');
      *
-     * @throws InvalidArgumentException
+     * Auth::loadConfig(
+     *     __DIR__ . '/config/auth.php',
+     *     createIfMissing: true
+     * );
+     *
      * @throws ConfigurationException
      */
-    public static function loadConfig(string $path): void
-    {
+    public static function loadConfig(
+        string $path,
+        bool $createIfMissing = false
+    ): void {
         if (!is_file($path)) {
-            throw new InvalidArgumentException("Auth config file not found: {$path}");
+            if (!$createIfMissing) {
+                throw new ConfigurationException("Auth config file not found: {$path}");
+            }
+
+            ConfigPublisher::publish($path);
         }
 
         $config = require $path;
@@ -170,6 +187,17 @@ final class Auth
     }
 
     /**
+     * Login using an already validated external provider identity.
+     *
+     * This method does not perform OAuth validation.
+     * The provider identity must be validated by the application before calling it.
+     */
+    public static function loginWithProvider(string $provider, string $providerId): AuthUser|false
+    {
+        return self::manager()->loginWithProvider($provider, $providerId);
+    }
+
+    /**
      * Logout the current authenticated user.
      */
     public static function logout(): void
@@ -186,11 +214,35 @@ final class Auth
     }
 
     /**
+     * Determine if there is no user authenticated.
+     */
+    public static function guest(): bool
+    {
+        return !self::check();
+    }
+
+    /**
      * Get the current authenticated user.
      */
     public static function user(): ?AuthUser
     {
         return self::manager()->user();
+    }
+
+    /**
+     * Get the profile row associated with the authenticated user's role.
+     *
+     * This method uses the configured "profiles" map.
+     *
+     * Example:
+     *
+     * Auth::profile();
+     *
+     * @return array<string, mixed>|null
+     */
+    public static function profile(): ?Profile
+    {
+        return self::manager()->profile();
     }
 
     /**
@@ -244,12 +296,15 @@ final class Auth
      * Diagnose current authentication configuration and database schema.
      *
      * Auth must be configured before calling this method.
+     * 
+     * @param bool $print If you would like to print out the result, set it to true
      *
      * @return array<string, array{ok:bool, message:string}>
      */
-    public static function diagnose(): array
+    public static function diagnose(bool $print = false): array
     {
-        return self::manager()->diagnose();
+        return $print ? print_r(self::diagnose(false))
+            : self::manager()->diagnose();
     }
 
 

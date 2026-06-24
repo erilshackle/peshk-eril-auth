@@ -5,24 +5,25 @@ namespace Eril\Auth\Authorization;
 use Eril\Auth\Auth\AuthManager;
 use Eril\Auth\Configuration\AuthConfig;
 use Eril\Auth\Exceptions\AuthorizationException;
+use Eril\Auth\Exceptions\ConfigurationException;
 
 final class Authorization
 {
-    private static ?PermissionResolver $manager = null;
+    private static ?PermissionResolver $resolver = null;
 
     public static function configure(AuthConfig $config, AuthManager $auth): void
     {
-        self::$manager = new PermissionResolver($config, $auth);
+        self::$resolver = new PermissionResolver($config, $auth);
     }
 
     public static function can(string $permission): bool
     {
-        return self::manager()->can($permission);
+        return self::resolver()->can($permission);
     }
 
     public static function cannot(string $permission): bool
     {
-        return !self::can($permission);
+        return self::resolver()->cannot($permission);
     }
 
     public static function authorize(string $permission): void
@@ -32,12 +33,12 @@ final class Authorization
         }
     }
 
-    private static function manager(): PermissionResolver
+    private static function resolver(): PermissionResolver
     {
-        if (!self::$manager) {
-            throw new AuthorizationException('Authorization is not configured.');
+        if (!self::$resolver) {
+            throw new ConfigurationException('Authorization is not configured.');
         }
 
-        return self::$manager;
+        return self::$resolver;
     }
 }

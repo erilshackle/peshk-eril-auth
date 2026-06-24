@@ -2,43 +2,39 @@
 
 namespace Eril\Auth\Auth;
 
-use JsonSerializable;
+use Eril\Auth\Auth;
+use Eril\Auth\Authorization\Authorization;
+use Eril\Auth\Profile\Profile;
+use Eril\Auth\Support\DataObject;
 
-final class AuthUser implements JsonSerializable
+final class AuthUser extends DataObject
 {
-    public function __construct(
-        private readonly array $attributes
-    ) {}
-
     public function id(): int|string|null
     {
-        return $this->attributes['id'] ?? null;
+        return $this->get('id');
     }
 
     public function name(): ?string
     {
-        return $this->attributes['name'] ?? null;
+        return $this->get('name');
     }
 
     public function login(): ?string
     {
-        return $this->attributes['login'] ?? null;
+        return $this->get('login');
     }
 
     public function role(): ?string
     {
-        return $this->attributes['role'] ?? null;
+        return $this->get('role');
     }
 
     public function hasRole(string $role, string ...$roles): bool
     {
         $current = $this->role();
 
-        if (!$current) {
-            return false;
-        }
-
-        return in_array($current, [$role, ...$roles], true);
+        return $current !== null
+            && in_array($current, [$role, ...$roles], true);
     }
 
     public function is(string $role): bool
@@ -46,44 +42,38 @@ final class AuthUser implements JsonSerializable
         return $this->hasRole($role);
     }
 
-    public function get(string $key, mixed $default = null): mixed
+    public function can(string $permission): bool
     {
-        return $this->attributes[$key] ?? $default;
+        return Authorization::can($permission);
     }
 
+    public function cannot(string $permission): bool
+    {
+        return Authorization::cannot($permission);
+    }
+
+    public function profile(): ?Profile
+    {
+        return Auth::profile();
+    }
+
+    /**
+     * @return array<string,mixed>
+     */
     public function raw(): array
     {
-        return $this->attributes['raw'] ?? [];
+        return $this->get('raw', []);
     }
 
-    public function only(string ...$keys): array
-    {
-        $result = [];
-
-        foreach ($keys as $key) {
-            if (array_key_exists($key, $this->attributes)) {
-                $result[$key] = $this->attributes[$key];
-            }
-        }
-
-        return $result;
-    }
-
-    public function except(string ...$keys): array
-    {
-        return array_diff_key(
-            $this->attributes,
-            array_flip($keys)
-        );
-    }
-
-    public function toArray(): array
-    {
-        return $this->attributes;
-    }
-
+    /**
+     * @return array<string,mixed>
+     */
     public function jsonSerialize(): array
     {
-        return $this->except('raw');
+        $data = $this->toArray();
+
+        unset($data['raw']);
+
+        return $data;
     }
 }

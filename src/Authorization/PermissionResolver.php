@@ -26,13 +26,18 @@ final class PermissionResolver
             return false;
         }
 
-        $permissions = $this->permissionsForRole($role);
-
-        if (in_array('*', $permissions, true)) {
-            return true;
+        foreach ($this->permissionsForRole($role) as $allowed) {
+            if ($this->matches($allowed, $permission)) {
+                return true;
+            }
         }
 
-        return in_array($permission, $permissions, true);
+        return false;
+    }
+
+    public function cannot(string $permission): bool
+    {
+        return !$this->can($permission);
     }
 
     private function permissionsForRole(string $role): array
@@ -40,5 +45,24 @@ final class PermissionResolver
         $permissions = $this->config->permissions();
 
         return $permissions[$role] ?? [];
+    }
+
+    private function matches(string $allowed, string $permission): bool
+    {
+        if ($allowed === '*') {
+            return true;
+        }
+
+        if ($allowed === $permission) {
+            return true;
+        }
+
+        if (str_ends_with($allowed, '.*')) {
+            $prefix = substr($allowed, 0, -2);
+
+            return str_starts_with($permission, $prefix . '.');
+        }
+
+        return false;
     }
 }

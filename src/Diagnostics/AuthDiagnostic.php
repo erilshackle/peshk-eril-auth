@@ -52,6 +52,11 @@ final class AuthDiagnostic
         }
 
         if ($this->config->rememberEnabled()) {
+            $checks['remember_selector_field'] = $this->checkColumnExists(
+                $this->config->userTable(),
+                $this->config->rememberSelectorField()
+            );
+
             $checks['remember_token_field'] = $this->checkColumnExists(
                 $this->config->userTable(),
                 $this->config->rememberTokenField()

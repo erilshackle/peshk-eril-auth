@@ -5,12 +5,17 @@ namespace Eril\Auth\Auth;
 use Eril\Auth\Configuration\AuthConfig;
 use Eril\Auth\Database\ConnectionResolver;
 use Eril\Auth\Diagnostics\AuthDiagnostic;
+use Eril\Auth\Profile\Profile;
+use Eril\Auth\Profile\ProfileResolver;
+use Eril\Auth\Providers\ProviderLoginManager;
 use Eril\Auth\Session\SessionManager;
 use PDO;
 
 final class AuthManager
 {
     private RememberMeManager $remember;
+    private ProfileResolver $profiles;
+    private ProviderLoginManager $providers;
 
     private ?string $error = null;
 
@@ -20,6 +25,17 @@ final class AuthManager
         private readonly SessionManager $session,
     ) {
         $this->remember = new RememberMeManager($this->config, $this->pdo);
+
+        $this->profiles = new ProfileResolver(
+            config: $this->config,
+            connection: $this->pdo,
+        );
+
+        $this->providers = new ProviderLoginManager(
+            config: $this->config,
+            connection: $this->pdo,
+            auth: $this,
+        );
     }
 
     public function boot(): void
@@ -64,6 +80,19 @@ final class AuthManager
         return $authUser;
     }
 
+    public function loginWithProvider(string $provider, string $providerId): AuthUser|false
+    {
+        $this->error = null;
+
+        $user = $this->providers->login($provider, $providerId);
+
+        if (!$user) {
+            $this->error = 'Provider login failed.';
+        }
+
+        return $user;
+    }
+
     public function logout(): void
     {
         if ($this->config->rememberEnabled()) {
@@ -89,6 +118,12 @@ final class AuthManager
 
         return new AuthUser($data);
     }
+
+    public function profile(): ?Profile
+    {
+        return $this->profiles->resolve($this->user());
+    }
+
 
     public function id(): int|string|null
     {

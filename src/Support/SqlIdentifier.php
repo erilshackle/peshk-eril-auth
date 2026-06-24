@@ -2,6 +2,7 @@
 
 namespace Eril\Auth\Support;
 
+use Eril\Auth\Exceptions\ConfigurationException;
 use InvalidArgumentException;
 
 final class SqlIdentifier
@@ -11,11 +12,11 @@ final class SqlIdentifier
         $value = trim($value);
 
         if ($value === '') {
-            throw new InvalidArgumentException("Invalid {$name}: empty value.");
+            throw new ConfigurationException("Invalid {$name}: empty value.");
         }
 
         if (!preg_match('/^[a-zA-Z_][a-zA-Z0-9_]*$/', $value)) {
-            throw new InvalidArgumentException("Invalid {$name}: {$value}.");
+            throw new ConfigurationException("Invalid {$name}: {$value}.");
         }
 
         return $value;
