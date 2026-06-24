@@ -52,19 +52,39 @@ final class AuthConfig
             SqlIdentifier::validate($profile['foreign_key'] ?? '', "profile foreign_key for role [{$role}]");
         }
 
-        foreach ($this->providers as $provider => $config) {
-            SqlIdentifier::validate((string) $provider, 'provider name');
+        $this->validateProviders();
+        $this->validateSession();
+    }
 
-            if (!is_array($config)) {
-                throw new ConfigurationException("Invalid provider configuration for [{$provider}].");
-            }
-
-            SqlIdentifier::validate($config['table'] ?? '', "provider table for [{$provider}]");
-            SqlIdentifier::nullable($config['provider_field'] ?? null, "provider_field for [{$provider}]");
-            SqlIdentifier::validate($config['provider_id_field'] ?? '', "provider_id_field for [{$provider}]");
-            SqlIdentifier::validate($config['user_id_field'] ?? '', "user_id_field for [{$provider}]");
+    private function validateProviders(): void
+    {
+        if ($this->providers === []) {
+            return;
         }
 
+        SqlIdentifier::validate(
+            $this->providers['table'] ?? '',
+            'provider table'
+        );
+
+        SqlIdentifier::validate(
+            $this->providers['provider_field'] ?? '',
+            'provider field'
+        );
+
+        SqlIdentifier::validate(
+            $this->providers['provider_id_field'] ?? '',
+            'provider id field'
+        );
+
+        SqlIdentifier::validate(
+            $this->providers['user_id_field'] ?? '',
+            'provider user id field'
+        );
+    }
+
+    private function validateSession()
+    {
         if ($this->sessionName === '') {
             throw new ConfigurationException('Auth session_name cannot be empty.');
         }

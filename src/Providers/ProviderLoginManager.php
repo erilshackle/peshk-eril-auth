@@ -18,7 +18,7 @@ final class ProviderLoginManager
 
     public function login(string $provider, string $providerId): AuthUser|false
     {
-        $providerConfig = $this->config->providers()[$provider] ?? null;
+        $providerConfig = $this->config->providers();
 
         if (!$providerConfig) {
             return false;
@@ -43,42 +43,30 @@ final class ProviderLoginManager
         return $this->auth->login($user);
     }
 
-    private function findUserId(string $provider, string $providerId, array $config): int|string|null
-    {
+    private function findUserId(
+        string $provider,
+        string $providerId,
+        array $config
+    ): int|string|null {
         $table = $config['table'];
-        $providerField = $config['provider_field'] ?? null;
+        $providerField = $config['provider_field'];
         $providerIdField = $config['provider_id_field'];
         $userIdField = $config['user_id_field'];
 
-        if ($providerField) {
-            $sql = sprintf(
-                'SELECT %s FROM %s WHERE %s = :provider AND %s = :provider_id LIMIT 1',
-                $userIdField,
-                $table,
-                $providerField,
-                $providerIdField
-            );
+        $sql = sprintf(
+            'SELECT %s FROM %s WHERE %s = :provider AND %s = :provider_id LIMIT 1',
+            $userIdField,
+            $table,
+            $providerField,
+            $providerIdField
+        );
 
-            $stmt = $this->db()->prepare($sql);
+        $stmt = $this->db()->prepare($sql);
 
-            $stmt->execute([
-                'provider' => $provider,
-                'provider_id' => $providerId,
-            ]);
-        } else {
-            $sql = sprintf(
-                'SELECT %s FROM %s WHERE %s = :provider_id LIMIT 1',
-                $userIdField,
-                $table,
-                $providerIdField
-            );
-
-            $stmt = $this->db()->prepare($sql);
-
-            $stmt->execute([
-                'provider_id' => $providerId,
-            ]);
-        }
+        $stmt->execute([
+            'provider' => $provider,
+            'provider_id' => $providerId,
+        ]);
 
         $id = $stmt->fetchColumn();
 

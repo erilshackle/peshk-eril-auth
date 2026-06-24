@@ -45,6 +45,13 @@ final class AuthIntegrationTest extends TestCase
             'remember_token_field' => 'remember_token',
             'remember_days' => 30,
 
+            'providers' => [
+                'table' => 'user_providers',
+                'provider_field' => 'provider',
+                'provider_id_field' => 'provider_id',
+                'user_id_field' => 'user_id',
+            ],
+
             'permissions' => [
                 'admin' => ['*'],
                 'patient' => [
@@ -53,6 +60,7 @@ final class AuthIntegrationTest extends TestCase
                     'profile.*',
                 ],
             ],
+
 
             'profiles' => [
                 'patient' => [
@@ -82,6 +90,33 @@ final class AuthIntegrationTest extends TestCase
         $this->assertFalse($user);
         $this->assertFalse(Auth::check());
         $this->assertSame('Invalid credentials.', Auth::error());
+    }
+
+    public function test_user_can_login_with_provider(): void
+    {
+        $user = Auth::loginWithProvider('google', 'google-123');
+
+        $this->assertNotFalse($user);
+        $this->assertTrue(Auth::check());
+        $this->assertSame(1, Auth::id());
+        $this->assertSame('patient', Auth::user()?->role());
+    }
+
+    public function test_provider_login_fails_with_unknown_provider_identity(): void
+    {
+        $user = Auth::loginWithProvider('google', 'invalid-id');
+
+        $this->assertFalse($user);
+        $this->assertFalse(Auth::check());
+        $this->assertSame('Provider login failed.', Auth::error());
+    }
+
+    public function test_provider_login_fails_with_unknown_provider(): void
+    {
+        $user = Auth::loginWithProvider('facebook', 'google-123');
+
+        $this->assertFalse($user);
+        $this->assertFalse(Auth::check());
     }
 
     public function test_user_can_logout(): void
@@ -153,6 +188,7 @@ final class AuthIntegrationTest extends TestCase
         $this->assertTrue($diagnose['remember_token_field']['ok']);
     }
 
+
     private function createSchema(): void
     {
         $this->pdo->exec("
@@ -164,6 +200,16 @@ final class AuthIntegrationTest extends TestCase
                 role TEXT NOT NULL,
                 remember_selector TEXT NULL,
                 remember_token TEXT NULL
+            )
+        ");
+
+        $this->pdo->exec("
+            CREATE TABLE user_providers (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                provider TEXT NOT NULL,
+                provider_id TEXT NOT NULL,
+                UNIQUE(provider, provider_id)
             )
         ");
 
@@ -198,6 +244,15 @@ final class AuthIntegrationTest extends TestCase
             'email' => 'admin@example.com',
             'password' => $password,
             'role' => 'admin',
+        ]);
+
+        $this->pdo->prepare("
+            INSERT INTO user_providers (user_id, provider, provider_id)
+            VALUES (:user_id, :provider, :provider_id)
+        ")->execute([
+            'user_id' => 1,
+            'provider' => 'google',
+            'provider_id' => 'google-123',
         ]);
 
         $this->pdo->prepare("
