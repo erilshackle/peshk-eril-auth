@@ -32,7 +32,7 @@ final class AuthIntegrationTest extends TestCase
 
             'id_field' => 'id',
             'name_field' => 'name',
-            'login_field' => 'email',
+            'login_field' => ['email'],
             'password_field' => 'password',
             'role_field' => 'role',
 
@@ -44,6 +44,13 @@ final class AuthIntegrationTest extends TestCase
             'remember_selector_field' => 'remember_selector',
             'remember_token_field' => 'remember_token',
             'remember_days' => 30,
+
+            'rate_limit' => [
+                'enabled' => true,
+                'max_attempts' => 2,
+                'decay_seconds' => 300,
+                'key' => 'login',
+            ],
 
             'providers' => [
                 'table' => 'user_providers',
@@ -175,6 +182,19 @@ final class AuthIntegrationTest extends TestCase
         $this->assertNull(Auth::profile());
     }
 
+    public function test_login_is_rate_limited_after_too_many_failures(): void
+    {
+        $this->assertFalse(Auth::attempt('patient@example.com', 'wrong'));
+        $this->assertFalse(Auth::attempt('patient@example.com', 'wrong'));
+
+        $this->assertFalse(Auth::attempt('patient@example.com', 'secret'));
+
+        $this->assertStringContainsString(
+            'Too many login attempts',
+            Auth::error()
+        );
+    }
+
     public function test_diagnose_returns_successful_checks(): void
     {
         $diagnose = Auth::diagnose();
@@ -182,7 +202,8 @@ final class AuthIntegrationTest extends TestCase
         $this->assertTrue($diagnose['pdo_connection']['ok']);
         $this->assertTrue($diagnose['user_table']['ok']);
         $this->assertTrue($diagnose['id_field']['ok']);
-        $this->assertTrue($diagnose['login_field']['ok']);
+        $this->assertTrue($diagnose['login_fields']['ok']);
+        $this->assertTrue($diagnose['login_field_email']['ok']);
         $this->assertTrue($diagnose['password_field']['ok']);
         $this->assertTrue($diagnose['remember_selector_field']['ok']);
         $this->assertTrue($diagnose['remember_token_field']['ok']);
