@@ -108,7 +108,7 @@ return [
 
     'id_field' => 'id',
     'name_field' => 'name',
-    'login_field' => 'email',
+    'login_field' => ['email'],
     'password_field' => 'password',
     'role_field' => 'role',
 

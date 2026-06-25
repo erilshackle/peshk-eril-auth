@@ -150,6 +150,15 @@ final class AuthManager
         return $this->error;
     }
 
+    public function diagnose(): array
+    {
+        return (new AuthDiagnostic(
+            config: $this->config,
+            pdo: $this->pdo,
+            session: $this->session,
+        ))->run();
+    }
+
     public function findUserById(int|string $id): ?array
     {
         $sql = sprintf(
@@ -168,14 +177,28 @@ final class AuthManager
 
     private function findUserByLogin(string $login): ?array
     {
+        $fields = $this->config->loginField();
+
+        if (is_string($fields)) {
+            $fields = [$fields];
+        }
+
+        $where = [];
+        $params = [];
+
+        foreach ($fields as $index => $field) {
+            $where[] = "{$field} = :login_{$index}";
+            $params["login_{$index}"] = $login;
+        }
+
         $sql = sprintf(
-            'SELECT * FROM %s WHERE %s = :login LIMIT 1',
+            'SELECT * FROM %s WHERE %s LIMIT 1',
             $this->config->userTable(),
-            $this->config->loginField()
+            implode(' OR ', $where)
         );
 
         $stmt = $this->db()->prepare($sql);
-        $stmt->execute(['login' => $login]);
+        $stmt->execute($params);
 
         $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -187,7 +210,7 @@ final class AuthManager
         $data = [
             'id' => $user[$this->config->idField()] ?? null,
             'name' => $user[$this->config->nameField()] ?? null,
-            'login' => $user[$this->config->loginField()] ?? null,
+            'login' => $this->resolveLoginValue($user),
         ];
 
         if ($this->config->roleField()) {
@@ -204,12 +227,20 @@ final class AuthManager
         return $this->pdo->get();
     }
 
-    public function diagnose(): array
+    private function resolveLoginValue(array $user): mixed
     {
-        return (new AuthDiagnostic(
-            config: $this->config,
-            pdo: $this->pdo,
-            session: $this->session,
-        ))->run();
+        $fields = $this->config->loginField();
+
+        if (is_string($fields)) {
+            return $user[$fields] ?? null;
+        }
+
+        foreach ($fields as $field) {
+            if (!empty($user[$field])) {
+                return $user[$field];
+            }
+        }
+
+        return null;
     }
 }

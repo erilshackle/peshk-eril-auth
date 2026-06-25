@@ -29,11 +29,6 @@ final class AuthDiagnostic
             $this->config->idField()
         );
 
-        $checks['login_field'] = $this->checkColumnExists(
-            $this->config->userTable(),
-            $this->config->loginField()
-        );
-
         $checks['password_field'] = $this->checkColumnExists(
             $this->config->userTable(),
             $this->config->passwordField()
@@ -49,6 +44,24 @@ final class AuthDiagnostic
                 $this->config->userTable(),
                 $this->config->roleField()
             );
+        }
+
+        
+        foreach ((array) $this->config->loginField() as $field) {
+            $checks["login_field_{$field}"] = $this->checkColumnExists(
+                $this->config->userTable(),
+                $field
+            );
+        }
+
+        $checks['permissions'] = $this->checkPermissions();
+
+        foreach ($this->checkProfiles() as $key => $check) {
+            $checks[$key] = $check;
+        }
+
+        foreach ($this->checkProviders() as $key => $check) {
+            $checks[$key] = $check;
         }
 
         if ($this->config->rememberEnabled()) {
@@ -84,8 +97,13 @@ final class AuthDiagnostic
         }
     }
 
-    private function checkTableExists(string $table): array
+    private function checkTableExists(?string $table): array
     {
+
+        if (!$table) {
+            return $this->fail('Table name is missing.');
+        }
+
         try {
             $driver = $this->driver();
 
@@ -112,8 +130,79 @@ final class AuthDiagnostic
         }
     }
 
-    private function checkColumnExists(string $table, ?string $column): array
+    private function checkPermissions(): array
     {
+        $permissions = $this->config->permissions();
+
+        if ($permissions === []) {
+            return $this->ok('No permissions configured.');
+        }
+
+        foreach ($permissions as $role => $items) {
+            if (!is_array($items)) {
+                return $this->fail("Permissions for role [{$role}] must be an array.");
+            }
+        }
+
+        return $this->ok('Permissions are configured.');
+    }
+
+    private function checkProfiles(): array
+    {
+        $checks = [];
+
+        foreach ($this->config->profiles() as $role => $profile) {
+            $table = $profile['table'] ?? null;
+            $foreignKey = $profile['foreign_key'] ?? null;
+
+            $checks["profile_{$role}_table"] = $this->checkTableExists($table);
+            $checks["profile_{$role}_foreign_key"] = $this->checkColumnExists($table, $foreignKey);
+        }
+
+        return $checks;
+    }
+
+    private function checkProviders(): array
+    {
+        $providers = $this->config->providers();
+
+        if ($providers === []) {
+            return [];
+        }
+
+        $table = $providers['table'] ?? null;
+
+        return [
+            'provider_table' => $this->checkTableExists($table),
+
+            'provider_field' => $this->checkColumnExists(
+                $table,
+                $providers['provider_field'] ?? null
+            ),
+
+            'provider_id_field' => $this->checkColumnExists(
+                $table,
+                $providers['provider_id_field'] ?? null
+            ),
+
+            'provider_user_id_field' => $this->checkColumnExists(
+                $table,
+                $providers['user_id_field'] ?? null
+            ),
+        ];
+    }
+
+    private function checkColumnExists(?string $table, ?string $column): array
+    {
+
+        if (!$table) {
+            return $this->fail('Table name is missing.');
+        }
+
+        if (!$table && !$column) {
+            return $this->fail('Column name is missing.');
+        }
+
         if (!$column) {
             return $this->ok('Column check skipped.');
         }

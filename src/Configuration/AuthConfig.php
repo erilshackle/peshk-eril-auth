@@ -12,7 +12,7 @@ final class AuthConfig
     public function __construct(
         private readonly mixed $db,
         private readonly string $userTable = 'users',
-        private readonly string $loginField = 'email',
+        private readonly string|array $loginField = 'email',
         private readonly string $passwordField = 'password_hash',
         private readonly string $idField = 'id',
         private readonly string $nameField = 'name',
@@ -33,7 +33,6 @@ final class AuthConfig
         }
 
         SqlIdentifier::validate($this->userTable, 'user_table');
-        SqlIdentifier::validate($this->loginField, 'login_field');
         SqlIdentifier::validate($this->passwordField, 'password_field');
         SqlIdentifier::validate($this->idField, 'id_field');
         SqlIdentifier::validate($this->nameField, 'name_field');
@@ -52,6 +51,7 @@ final class AuthConfig
             SqlIdentifier::validate($profile['foreign_key'] ?? '', "profile foreign_key for role [{$role}]");
         }
 
+        $this->validateLoginField();
         $this->validateProviders();
         $this->validateSession();
     }
@@ -81,6 +81,22 @@ final class AuthConfig
             $this->providers['user_id_field'] ?? '',
             'provider user id field'
         );
+    }
+
+    private function validateLoginField(): void
+    {
+        if (is_string($this->loginField)) {
+            SqlIdentifier::validate($this->loginField, 'login_field');
+            return;
+        }
+
+        if ($this->loginField === []) {
+            throw new ConfigurationException('login_field cannot be an empty array.');
+        }
+
+        foreach ($this->loginField as $field) {
+            SqlIdentifier::validate((string) $field, 'login_field');
+        }
     }
 
     private function validateSession()
@@ -114,7 +130,7 @@ final class AuthConfig
      *     user_table?:string,
      *     id_field?:string,
      *     name_field?:string,
-     *     login_field?:string,
+     *     login_field?:string|array<int,string>,
      *     password_field?:string,
      *     role_field?:string|null,
      *     profiles?:array,
@@ -162,7 +178,7 @@ final class AuthConfig
         return $this->userTable;
     }
 
-    public function loginField(): string
+    public function loginField(): string|array
     {
         return $this->loginField;
     }
