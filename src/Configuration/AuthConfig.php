@@ -26,6 +26,7 @@ final class AuthConfig
         private readonly string $rememberCookie = 'remember_token',
         private readonly ?string $rememberTokenField = 'remember_token',
         private readonly ?string $rememberSelectorField = null,
+        private readonly array $rateLimit = [],
         private readonly int $rememberDays = 7,
     ) {
         if ($this->db === null) {
@@ -53,6 +54,7 @@ final class AuthConfig
 
         $this->validateLoginField();
         $this->validateProviders();
+        $this->validateRateLimit();
         $this->validateSession();
     }
 
@@ -99,6 +101,39 @@ final class AuthConfig
         }
     }
 
+    private function validateRateLimit(): void
+    {
+        if ($this->rateLimit === []) {
+            return;
+        }
+
+        if (!is_array($this->rateLimit)) {
+            throw new ConfigurationException('rate_limit must be an array.');
+        }
+
+        $enabled = $this->rateLimit['enabled'] ?? false;
+
+        if (!$enabled) {
+            return;
+        }
+
+        $maxAttempts = $this->rateLimit['max_attempts'] ?? 5;
+        $decaySeconds = $this->rateLimit['decay_seconds'] ?? 300;
+        $key = $this->rateLimit['key'] ?? 'login_ip';
+
+        if (!is_int($maxAttempts) || $maxAttempts < 1) {
+            throw new ConfigurationException('rate_limit.max_attempts must be a positive integer.');
+        }
+
+        if (!is_int($decaySeconds) || $decaySeconds < 1) {
+            throw new ConfigurationException('rate_limit.decay_seconds must be a positive integer.');
+        }
+
+        if (!in_array($key, ['login', 'ip', 'login_ip'], true)) {
+            throw new ConfigurationException('rate_limit.key must be one of: login, ip, login_ip.');
+        }
+    }
+
     private function validateSession()
     {
         if ($this->sessionName === '') {
@@ -142,6 +177,7 @@ final class AuthConfig
      *     remember_cookie?:string,
      *     remember_token_field?:string|null,
      *     remember_selector_field?:string|null,
+     *     rateLimit?:array,
      *     remember_days?:int
      * } $config
      */
@@ -164,6 +200,7 @@ final class AuthConfig
             rememberCookie: $config['remember_cookie'] ?? 'remember_token',
             rememberTokenField: $config['remember_token_field'] ?? 'remember_token',
             rememberSelectorField: $config['remember_selector_field'] ?? 'remember_selector',
+            rateLimit: $config['rate_limit'] ?? ['enabled' => false],
             rememberDays: $config['remember_days'] ?? 7,
         );
     }
@@ -246,6 +283,11 @@ final class AuthConfig
     public function rememberSelectorField(): ?string
     {
         return $this->rememberSelectorField;
+    }
+
+    public function rateLimit(): array
+    {
+        return $this->rateLimit;
     }
 
     public function rememberDays(): int

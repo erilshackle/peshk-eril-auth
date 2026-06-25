@@ -46,12 +46,15 @@ final class AuthDiagnostic
             );
         }
 
-        
+
         foreach ((array) $this->config->loginField() as $field) {
-            $checks["login_field_{$field}"] = $this->checkColumnExists(
+            $check = $this->checkColumnExists(
                 $this->config->userTable(),
                 $field
             );
+
+            $checks["login_field_{$field}"] = $check;
+            $checks["login_fields"] = ($checks["login_field"] ?? true) ? $check : false;
         }
 
         $checks['permissions'] = $this->checkPermissions();

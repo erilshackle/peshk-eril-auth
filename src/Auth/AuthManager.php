@@ -9,6 +9,7 @@ use Eril\Auth\Profile\Profile;
 use Eril\Auth\Profile\ProfileResolver;
 use Eril\Auth\Providers\ProviderLoginManager;
 use Eril\Auth\Providers\ProviderLosginManager;
+use Eril\Auth\RateLimit\LoginRateLimiter;
 use Eril\Auth\Session\SessionManager;
 use PDO;
 
@@ -17,6 +18,7 @@ final class AuthManager
     private RememberMeManager $remember;
     private ProfileResolver $profiles;
     private ProviderLoginManager $providers;
+    private LoginRateLimiter $rateLimiter;
 
     private ?string $error = null;
 
@@ -37,6 +39,11 @@ final class AuthManager
             connection: $this->pdo,
             auth: $this,
         );
+
+        $this->rateLimiter = new LoginRateLimiter(
+            config: $this->config,
+            session: $this->session,
+        );
     }
 
     public function boot(): void
@@ -54,9 +61,19 @@ final class AuthManager
     {
         $this->error = null;
 
+        if ($this->rateLimiter->tooManyAttempts($login)) {
+            $seconds = $this->rateLimiter->availableIn($login);
+
+            $this->error = "Too many login attempts. Try again in {$seconds} seconds.";
+
+            return false;
+        }
+
         $user = $this->findUserByLogin($login);
 
         if (!$user) {
+            $this->rateLimiter->hit($login);
+
             $this->error = 'Invalid credentials.';
             return false;
         }
@@ -64,9 +81,13 @@ final class AuthManager
         $hash = $user[$this->config->passwordField()] ?? null;
 
         if (!$hash || !password_verify($password, $hash)) {
+            $this->rateLimiter->hit($login);
+
             $this->error = 'Invalid credentials.';
             return false;
         }
+
+        $this->rateLimiter->clear($login);
 
         return $this->login($user);
     }

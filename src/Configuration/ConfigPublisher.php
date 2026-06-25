@@ -70,10 +70,6 @@ return [
     |
     | Example:
     |
-    | 'db' => $pdo,
-    |
-    | or:
-    |
     | 'db' => fn (): PDO => new PDO(
     |     'mysql:host=localhost;dbname=app;charset=utf8mb4',
     |     'root',
@@ -118,12 +114,13 @@ return [
     |--------------------------------------------------------------------------
     |
     | session_name is the $_SESSION key used by the auth library.
-    | session_lifetime is expressed in seconds.
+    | session_lifetime is expressed in seconds. (Set to NULL to use default)
     |
     */
 
     'session_name' => 'auth_user',
     'session_lifetime' => 3600,
+    
 
     /*
     |--------------------------------------------------------------------------
@@ -142,6 +139,52 @@ return [
     'remember_selector_field' => 'remember_selector',
     'remember_token_field' => 'remember_token',
     'remember_days' => 30,
+
+    /*
+    |--------------------------------------------------------------------------
+    | Rate Limit
+    |--------------------------------------------------------------------------
+    |
+    | Protect login attempts.
+    |
+    | key options:
+    | - login
+    | - ip
+    | - login_ip
+    |
+    */
+
+    'rate_limit' => [
+
+        'enabled' => true,
+
+        'max_attempts' => 5,
+
+        'decay_seconds' => 300,
+
+        'key' => 'login_ip',
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Provider Login
+    |--------------------------------------------------------------------------
+    |
+    | Settings for login with provider .
+    |
+    */
+
+    'providers' => [
+
+        'table' => 'user_providers',
+
+        'provider_field' => 'provider',
+
+        'provider_id_field' => 'provider_id',
+
+        'user_id_field' => 'user_id',
+    ],
+
 
     /*
     |--------------------------------------------------------------------------
@@ -170,25 +213,6 @@ return [
         ],
     ],
 
-    /*
-    |--------------------------------------------------------------------------
-    | Provider Login
-    |--------------------------------------------------------------------------
-    |
-    | Settings for login with provider .
-    |
-    */
-
-    'providers' => [
-
-        'table' => 'user_providers',
-
-        'provider_field' => 'provider',
-
-        'provider_id_field' => 'provider_id',
-
-        'user_id_field' => 'user_id',
-    ],
 
     /*
     |--------------------------------------------------------------------------
