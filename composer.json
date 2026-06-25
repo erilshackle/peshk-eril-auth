@@ -36,9 +36,9 @@
             "Eril\\Auth\\Tests\\": "tests/"
         }
     },
+    "minimum-stability": "stable",
+    "prefer-stable": true,
     "bin": [
         "bin/auth"
-    ],
-    "minimum-stability": "stable",
-    "prefer-stable": true
+    ]
 }
