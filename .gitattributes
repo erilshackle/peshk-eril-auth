@@ -1,0 +1,18 @@
+# Git
+.gitattributes text
+.gitignore text
+
+# Exclude development files from Composer packages
+/.github export-ignore
+/tests export-ignore
+/.vscode export-ignore
+
+/config export-ignore
+/examples export-ignore
+
+/.gitignore export-ignore
+/.gitattributes export-ignore
+
+/phpunit.xml export-ignore
+
+/CHANGELOG.md export-ignore

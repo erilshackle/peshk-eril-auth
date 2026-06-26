@@ -14,11 +14,8 @@ return [
     |
     */
 
-    'db' => fn (): PDO => new PDO(
-        'mysql:host=localhost;dbname=app;charset=utf8mb4',
-        'root',
-        ''
-    ),
+    'db' => new PDO('sqlite:database.db'),
+
 
     /*
     |--------------------------------------------------------------------------

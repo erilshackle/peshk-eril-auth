@@ -1,18 +1,23 @@
 # Changelog
 
-## [0.9.0] - 2026-06-25
+## [0.9.0] - 2026-06-26
 
 ### Added
 
-- Session authentication
-- Remember Me
-- Login rate limiting
-- Role-based permissions
-- Login with external providers
-- User profiles
-- Diagnostics
-- CLI installer
-- Configuration publisher
+- Session-based authentication.
+- Multiple login fields.
+- Manual login support.
+- Login with external providers.
+- Remember Me using selector/token strategy.
+- Login rate limiting.
+- Role-based permissions.
+- Wildcard permissions.
+- User profiles.
+- AuthUser and Profile data objects with ArrayAccess.
+- Authentication diagnostics.
+- Configuration publisher.
+- CLI commands.
+- Dedicated exceptions.
 
 ### Changed
 
