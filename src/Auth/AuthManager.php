@@ -2,7 +2,7 @@
 
 namespace Eril\Auth\Auth;
 
-use Eril\Auth\Auth\Remember\RememberMeManager;
+use Eril\Auth\Remember\RememberMeManager;
 use Eril\Auth\Configuration\AuthConfig;
 use Eril\Auth\Database\ConnectionResolver;
 use Eril\Auth\Diagnostics\AuthDiagnostic;

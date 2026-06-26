@@ -1,6 +1,6 @@
 <?php
 
-namespace Eril\Auth\Auth\Remember;
+namespace Eril\Auth\Remember;
 
 use Eril\Auth\Configuration\AuthConfig;
 use Eril\Auth\Database\ConnectionResolver;
