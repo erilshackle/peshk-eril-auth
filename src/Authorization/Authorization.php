@@ -9,11 +9,11 @@ use Eril\Auth\Exceptions\ConfigurationException;
 
 final class Authorization
 {
-    private static ?PermissionResolver $resolver = null;
+    private static ?PermissionManager $resolver = null;
 
     public static function configure(AuthConfig $config, AuthManager $auth): void
     {
-        self::$resolver = new PermissionResolver($config, $auth);
+        self::$resolver = new PermissionManager($config, $auth);
     }
 
     public static function can(string $permission): bool
@@ -33,7 +33,7 @@ final class Authorization
         }
     }
 
-    private static function resolver(): PermissionResolver
+    private static function resolver(): PermissionManager
     {
         if (!self::$resolver) {
             throw new ConfigurationException('Authorization is not configured.');

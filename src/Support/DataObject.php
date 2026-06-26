@@ -31,6 +31,15 @@ abstract class DataObject implements ArrayAccess, JsonSerializable
     /**
      * @return array<string,mixed>
      */
+    public function all(): array
+    {
+        return $this->toArray();
+    }
+
+
+    /**
+     * @return array<string,mixed>
+     */
     public function toArray(): array
     {
         return $this->attributes;

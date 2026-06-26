@@ -1,6 +1,6 @@
 <?php
 
-namespace Eril\Auth\Auth;
+namespace Eril\Auth\Auth\Remember;
 
 use Eril\Auth\Configuration\AuthConfig;
 use Eril\Auth\Database\ConnectionResolver;
@@ -138,7 +138,7 @@ final class RememberMeManager
             $this->config->rememberCookie(),
             $value,
             [
-                'expires' => time() + ($this->config->rememberDays() * 86400),
+                'expires' => time() + ($this->config->rememberLifetime()),
                 'path' => '/',
                 'httponly' => true,
                 'samesite' => 'Lax',

@@ -63,18 +63,11 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Database Connection
+    | Database
     |--------------------------------------------------------------------------
     |
-    | Provide a PDO instance or a callable returning a PDO instance.
-    |
-    | Example:
-    |
-    | 'db' => fn (): PDO => new PDO(
-    |     'mysql:host=localhost;dbname=app;charset=utf8mb4',
-    |     'root',
-    |     ''
-    | ),
+    | Configure the database connection used by the authentication system.
+    | Provide either a PDO instance or a callable returning a PDO instance.
     |
     */
 
@@ -86,25 +79,24 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | User Table
+    | Users Table
     |--------------------------------------------------------------------------
+    |
+    | Define where users are stored and which columns are used for
+    | authentication, identity and authorization.
+    |
+    | login_field may be a string or an array:
+    |
+    | 'login_field' => 'email',
+    | 'login_field' => ['email', 'username', 'phone'],
+    |
     */
 
     'user_table' => 'users',
 
-    /*
-    |--------------------------------------------------------------------------
-    | User Fields
-    |--------------------------------------------------------------------------
-    |
-    | These columns are used to identify, authenticate and normalize the
-    | authenticated user object.
-    |
-    */
-
     'id_field' => 'id',
     'name_field' => 'name',
-    'login_field' => ['email'],
+    'login_field' => 'email',
     'password_field' => 'password',
     'role_field' => 'role',
 
@@ -113,56 +105,52 @@ return [
     | Session
     |--------------------------------------------------------------------------
     |
-    | session_name is the $_SESSION key used by the auth library.
-    | session_lifetime is expressed in seconds. (Set to NULL to use default)
+    | Configure how authenticated users are stored in the session.
+    | Set session_lifetime to null to use PHP's default session settings.
     |
     */
 
     'session_name' => 'auth_user',
     'session_lifetime' => 3600,
-    
 
     /*
     |--------------------------------------------------------------------------
-    | Remember Me
+    | Security
     |--------------------------------------------------------------------------
     |
-    | Requires these nullable columns in your users table:
-    |
-    | remember_selector VARCHAR(64) NULL
-    | remember_token VARCHAR(255) NULL
-    |
-    */
-
-    'remember_enabled' => true,
-    'remember_cookie' => 'remember_token',
-    'remember_selector_field' => 'remember_selector',
-    'remember_token_field' => 'remember_token',
-    'remember_days' => 30,
-
-    /*
-    |--------------------------------------------------------------------------
-    | Rate Limit
-    |--------------------------------------------------------------------------
-    |
-    | Protect login attempts.
-    |
-    | key options:
-    | - login
-    | - ip
-    | - login_ip
+    | Configure additional security features such as login rate limiting
+    | and "Remember Me" persistent authentication.
     |
     */
 
     'rate_limit' => [
-
         'enabled' => true,
-
         'max_attempts' => 5,
-
         'decay_seconds' => 300,
-
         'key' => 'login_ip',
+    ],
+
+    'remember_enabled' => false,
+    'remember_cookie' => 'remember_token',
+    'remember_selector_field' => 'remember_selector',
+    'remember_token_field' => 'remember_token',
+    'remember_lifetime' => 60 * 60 * 24 * 30,
+
+    /*
+    |--------------------------------------------------------------------------
+    | Profiles
+    |--------------------------------------------------------------------------
+    |
+    | Optionally map user roles to profile tables.
+    | Profiles are loaded on demand and remain separate from the user record.
+    |
+    */
+
+    'profiles' => [
+        // 'patient' => [
+        //     'table' => 'patients',
+        //     'foreign_key' => 'user_id',
+        // ],
     ],
 
     /*
@@ -170,62 +158,31 @@ return [
     | Provider Login
     |--------------------------------------------------------------------------
     |
-    | Settings for login with provider .
+    | Configure login using externally validated identity providers
+    | such as Google, Facebook or GitHub.
     |
     */
 
     'providers' => [
-
-        'table' => 'user_providers',
-
-        'provider_field' => 'provider',
-
-        'provider_id_field' => 'provider_id',
-
-        'user_id_field' => 'user_id',
+        // 'table' => 'user_providers',
+        // 'provider_field' => 'provider',
+        // 'provider_id_field' => 'provider_id',
+        // 'user_id_field' => 'user_id',
     ],
-
 
     /*
     |--------------------------------------------------------------------------
-    | Profiles
+    | Authorization
     |--------------------------------------------------------------------------
     |
-    | Optional profile table mapping by role.
-    |
-    | Example:
-    |
-    | role "patient" loads from table "patients"
-    | where patients.user_id = authenticated user id.
-    |
-    */
-
-    'profiles' => [
-
-        'patient' => [
-            'table' => 'patients',
-            'foreign_key' => 'user_id',
-        ],
-
-        'professional' => [
-            'table' => 'professionals',
-            'foreign_key' => 'user_id',
-        ],
-    ],
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | Permissions
-    |--------------------------------------------------------------------------
-    |
-    | Role-based permissions are stored in a separate file by default.
+    | Configure role-based permissions.
+    | By default, permissions are loaded from a separate configuration file.
     |
     */
 
     'permissions' => require __DIR__ . '/permissions.php',
-];
 
+];
 PHP;
     }
 

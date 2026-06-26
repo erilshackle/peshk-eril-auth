@@ -27,7 +27,7 @@ final class AuthConfig
         private readonly ?string $rememberTokenField = 'remember_token',
         private readonly ?string $rememberSelectorField = null,
         private readonly array $rateLimit = [],
-        private readonly int $rememberDays = 7,
+        private readonly int $rememberLifetime = 2592000,
     ) {
         if ($this->db === null) {
             throw new ConfigurationException('Auth database connection [db] is required.');
@@ -144,8 +144,8 @@ final class AuthConfig
             throw new ConfigurationException('Auth session_lifetime must be greater than zero.');
         }
 
-        if ($this->rememberDays < 1) {
-            throw new ConfigurationException('Auth remember_days must be greater than zero.');
+        if ($this->rememberLifetime < 1) {
+            throw new ConfigurationException('Auth remember_lifetime must be greater than zero.');
         }
 
         if ($this->rememberEnabled && $this->rememberTokenField === null) {
@@ -178,7 +178,7 @@ final class AuthConfig
      *     remember_token_field?:string|null,
      *     remember_selector_field?:string|null,
      *     rateLimit?:array,
-     *     remember_days?:int
+     *     remember_lifetime?:int
      * } $config
      */
     public static function fromArray(array $config): self
@@ -196,12 +196,17 @@ final class AuthConfig
             providers: $config['providers'] ?? [],
             sessionName: $config['session_name'] ?? 'auth_user',
             sessionLifetime: $config['session_lifetime'] ?? 3600,
-            rememberEnabled: $config['remember_enabled'] ?? true,
+            rememberEnabled: $config['remember_enabled'] ?? false,
             rememberCookie: $config['remember_cookie'] ?? 'remember_token',
             rememberTokenField: $config['remember_token_field'] ?? 'remember_token',
             rememberSelectorField: $config['remember_selector_field'] ?? 'remember_selector',
-            rateLimit: $config['rate_limit'] ?? ['enabled' => false],
-            rememberDays: $config['remember_days'] ?? 7,
+            rateLimit: $config['rate_limit'] ?? [
+                'enabled' => false,
+                'max_attempts' => 5,
+                'decay_seconds' => 300,
+                'key' => 'login_ip',
+            ],
+            rememberLifetime: $config['remember_lifetime'] ?? (($config['remember_days'] ?? 7) * 86400),
         );
     }
 
@@ -265,6 +270,16 @@ final class AuthConfig
         return $this->sessionLifetime;
     }
 
+    public function hasProfiles(): bool
+    {
+        return !empty($this->profiles());
+    }
+
+    public function hasProviders(): bool
+    {
+        return !empty($this->providers());
+    }
+
     public function rememberEnabled(): bool
     {
         return $this->rememberEnabled;
@@ -290,8 +305,8 @@ final class AuthConfig
         return $this->rateLimit;
     }
 
-    public function rememberDays(): int
+    public function rememberLifetime(): int
     {
-        return $this->rememberDays;
+        return $this->rememberLifetime;
     }
 }

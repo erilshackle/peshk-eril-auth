@@ -2,13 +2,13 @@
 
 namespace Eril\Auth\Auth;
 
+use Eril\Auth\Auth\Remember\RememberMeManager;
 use Eril\Auth\Configuration\AuthConfig;
 use Eril\Auth\Database\ConnectionResolver;
 use Eril\Auth\Diagnostics\AuthDiagnostic;
 use Eril\Auth\Profile\Profile;
 use Eril\Auth\Profile\ProfileResolver;
 use Eril\Auth\Providers\ProviderLoginManager;
-use Eril\Auth\Providers\ProviderLosginManager;
 use Eril\Auth\RateLimit\LoginRateLimiter;
 use Eril\Auth\Session\SessionManager;
 use PDO;
@@ -55,6 +55,11 @@ final class AuthManager
         if (!$this->check() && $this->config->rememberEnabled()) {
             $this->remember->attemptAutoLogin($this);
         }
+    }
+
+    public function connection(): PDO
+    {
+        return $this->pdo->get();
     }
 
     public function attempt(string $login, string $password): AuthUser|false
