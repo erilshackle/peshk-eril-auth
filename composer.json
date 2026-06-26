@@ -15,7 +15,7 @@
     ],
     "authors": [
         {
-            "name": "Eril Tavares",
+            "name": "Eril TS Carvalho",
             "role": "Developer"
         }
     ],
@@ -40,5 +40,10 @@
     "prefer-stable": true,
     "bin": [
         "bin/auth"
-    ]
+    ],
+    "scripts": {
+        "test": "phpunit",
+        "analyse": "phpstan analyse",
+        "cs": "php-cs-fixer fix"
+    }
 }
