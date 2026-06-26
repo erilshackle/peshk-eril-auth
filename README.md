@@ -1,37 +1,67 @@
 # Eril Auth
 
-Simple authentication and authorization library for PHP.
+Lightweight authentication and authorization library for modern PHP applications.
 
-Eril Auth provides session-based authentication, persistent login (remember-me), role-based authorization (RBAC), permission wildcards and diagnostics with minimal configuration and no framework dependency.
+Eril Auth provides session-based authentication, persistent login (Remember Me), role-based authorization (RBAC), login rate limiting, provider login, user profiles and diagnostics without requiring a framework.
+
+---
 
 ## Features
 
 * Session-based authentication
+* Multiple login fields (email, username, phone, etc.)
 * Persistent login (Remember Me)
+* Login rate limiting
+* Login with external providers
 * Role-based authorization (RBAC)
 * Wildcard permissions
-* User role checks
+* User profiles
 * Authentication diagnostics
-* PDO support
-* Automatic configuration file generation
+* Configuration publisher
+* CLI installer
 * Framework agnostic
 * PHP 8.1+
 
 ---
 
-## Installation
+## Requirements
+
+* PHP 8.1+
+* PDO Extension
+
+---
+
+# Installation
 
 Install via Composer:
 
 ```bash
-composer require eril/auth
+composer require eril/peshk-auth
+```
+
+Generate the default configuration:
+
+```bash
+vendor/bin/auth install
+```
+
+Or publish only the configuration files:
+
+```bash
+vendor/bin/auth publish
+```
+
+Verify your installation:
+
+```bash
+vendor/bin/auth diagnose
 ```
 
 ---
 
-## Quick Start
+# Quick Start
 
-Create or load the configuration file:
+Load the configuration during application bootstrap.
 
 ```php
 use Eril\Auth\Auth;
@@ -42,64 +72,83 @@ Auth::loadConfig(
 );
 ```
 
-This will automatically create:
+This automatically creates:
 
-```txt
+```text
 config/
 ├── auth.php
 └── permissions.php
 ```
 
-if they do not exist.
+Authenticate a user:
+
+```php
+$user = Auth::attempt(
+    $_POST['login'],
+    $_POST['password']
+);
+
+if (!$user) {
+    die(Auth::error());
+}
+
+echo "Welcome {$user->name()}";
+```
 
 ---
 
-## Configuration
+# Configuration
 
-Example `config/auth.php`:
+The installer generates a complete `config/auth.php` file with documentation for every available option.
+
+A minimal configuration looks like this:
 
 ```php
 <?php
 
+use PDO;
+
 return [
 
-    'db' => fn () => new PDO(
+    'db' => fn (): PDO => new PDO(
         'mysql:host=localhost;dbname=app;charset=utf8mb4',
         'root',
         ''
     ),
 
-    'user_table' => 'users',
-
-    'id_field' => 'id',
-    'name_field' => 'name',
-    'login_field' => 'email',
-    'password_field' => 'password',
-    'role_field' => 'role',
-
-    'session_name' => 'auth_user',
-    'session_lifetime' => 3600,
+    'login_field' => [
+        'email',
+        'username',
+    ],
 
     'remember_enabled' => true,
-    'remember_cookie' => 'remember_token',
-    'remember_selector_field' => 'remember_selector',
-    'remember_token_field' => 'remember_token',
-    'remember_days' => 30,
 
-    'permissions' => require __DIR__ . '/permissions.php',
+    'permissions' => require __DIR__.'/permissions.php',
+
 ];
 ```
 
+The generated configuration file contains additional options for:
+
+* Session handling
+* User table mapping
+* Rate limiting
+* Remember Me
+* Profiles
+* Provider login
+
 ---
 
-## Authentication
+# Authentication
 
-### Login
+## Login
+
+Authenticate using the configured login field(s).
 
 ```php
 $user = Auth::attempt(
-    $_POST['email'],
-    $_POST['password']
+    $login,
+    $password
 );
 
 if (!$user) {
@@ -108,51 +157,142 @@ if (!$user) {
 }
 ```
 
-### Login with Remember Me
+If multiple login fields are configured:
 
 ```php
-$user = Auth::attempt(
-    $_POST['email'],
-    $_POST['password']
-);
+'login_field' => [
+    'email',
+    'username',
+    'phone',
+],
+```
 
-if ($user && !empty($_POST['remember'])) {
+The following will all work:
+
+```php
+Auth::attempt('john@example.com', 'secret');
+
+Auth::attempt('john', 'secret');
+
+Auth::attempt('+351999999999', 'secret');
+```
+
+---
+
+## Manual Login
+
+You may authenticate a user manually.
+
+```php
+Auth::login([
+
+    'id' => 1,
+
+    'name' => 'Administrator',
+
+    'email' => 'admin@example.com',
+
+    'role' => 'admin',
+
+]);
+```
+
+This is useful when authentication is handled by another system.
+
+---
+
+## Login with Provider
+
+Eril Auth supports authentication through externally validated identity providers.
+
+Typical flow:
+
+```
+Google OAuth
+        │
+        ▼
+Application validates token
+        │
+        ▼
+Auth::loginWithProvider()
+```
+
+Example:
+
+```php
+$user = Auth::loginWithProvider(
+    'google',
+    $googleUserId
+);
+```
+
+> Eril Auth does **not** implement OAuth.
+>
+> Token validation must be performed by your application or an OAuth library before calling `loginWithProvider()`.
+
+---
+
+## Remember Me
+
+Enable persistent login:
+
+```php
+'remember_enabled' => true,
+```
+
+After a successful login:
+
+```php
+if (!empty($_POST['remember'])) {
     Auth::rememberUser();
 }
 ```
 
-### Manual Login
+On future visits, Eril Auth automatically restores the session if the remember cookie is valid.
 
-```php
-Auth::login([
-    'id' => 1,
-    'name' => 'Administrator',
-    'email' => 'admin@example.com',
-    'role' => 'admin',
-]);
+### Database
+
+Remember Me requires two nullable columns in the users table.
+
+```sql
+ALTER TABLE users
+
+ADD remember_selector VARCHAR(64) NULL,
+
+ADD remember_token VARCHAR(255) NULL;
 ```
 
-### Check Authentication
+---
+
+## Login Rate Limiting
+
+Protect login attempts against brute-force attacks.
 
 ```php
-if (Auth::check()) {
-    //
-}
+'rate_limit' => [
+
+    'enabled' => true,
+
+    'max_attempts' => 5,
+
+    'decay_seconds' => 300,
+
+    'key' => 'login_ip',
+
+],
 ```
 
-### Current User
+Available key strategies:
 
-```php
-$user = Auth::user();
-```
+| Strategy | Description          |
+| -------- | -------------------- |
+| login    | Limit by login value |
+| ip       | Limit by client IP   |
+| login_ip | Limit by login + IP  |
 
-### Current User ID
+---
 
-```php
-$id = Auth::id();
-```
-
-### Logout
+## Logout
 
 ```php
 Auth::logout();
@@ -160,169 +300,71 @@ Auth::logout();
 
 ---
 
-## Roles
+## Authentication State
 
-### Check Single Role
+Determine whether a user is authenticated.
 
 ```php
-if (Auth::hasRole('admin')) {
-    //
+if (Auth::check()) {
+
 }
 ```
 
-### Check Multiple Roles
+Or check if no user is authenticated.
 
 ```php
-if (Auth::hasRole('admin', 'manager')) {
-    //
-}
-```
+if (Auth::guest()) {
 
-### Using AuthUser
-
-```php
-if (Auth::user()?->is('admin')) {
-    //
 }
 ```
 
 ---
 
-## Authorization (RBAC)
+## Current User
 
-Permissions are configured by role.
-
-Example `config/permissions.php`:
+Retrieve the authenticated user.
 
 ```php
-<?php
-
-return [
-
-    'admin' => [
-        '*',
-    ],
-
-    'professional' => [
-        'appointments.*',
-        'patients.view',
-        'activities.*',
-    ],
-
-    'patient' => [
-        'appointments.view',
-        'appointments.create',
-        'appointments.cancel',
-
-        'profile.view',
-        'profile.update',
-    ],
-];
+$user = Auth::user();
 ```
 
-### Check Permission
+Retrieve the authenticated user's identifier.
 
 ```php
-if (Auth::can('appointments.create')) {
-    //
-}
+$id = Auth::id();
 ```
 
-### Negated Check
+Retrieve the authenticated user's profile.
 
 ```php
-if (Auth::cannot('appointments.delete')) {
-    //
-}
+$profile = Auth::profile();
 ```
 
-### Authorize
+# AuthUser
 
-Throws an `AuthorizationException` when the user is not authorized.
+`AuthUser` represents the currently authenticated user.
 
-```php
-Auth::authorize('appointments.create');
-```
+It provides convenient methods for accessing user data, checking roles and permissions, and loading the associated profile.
 
-### Using AuthUser
+---
+
+## Standard Methods
 
 ```php
 $user = Auth::user();
 
-if ($user?->can('appointments.create')) {
-    //
-}
-```
-
----
-
-## Wildcard Permissions
-
-Grant all permissions:
-
-```php
-'admin' => [
-    '*',
-];
-```
-
-Grant all permissions within a group:
-
-```php
-'professional' => [
-    'appointments.*',
-];
-```
-
-Allows:
-
-```php
-appointments.view
-appointments.create
-appointments.update
-appointments.delete
-```
-
----
-
-## Remember Me
-
-To use persistent login, add the following nullable columns to your users table:
-
-```sql
-ALTER TABLE users
-ADD remember_selector VARCHAR(64) NULL,
-ADD remember_token VARCHAR(255) NULL;
-```
-
-Enable remember-me in configuration:
-
-```php
-'remember_enabled' => true,
-```
-
-Remember the authenticated user:
-
-```php
-Auth::rememberUser();
-```
-
-The library automatically restores the session when a valid remember-me cookie is present.
-
----
-
-## AuthUser
-
-### Standard Methods
-
-```php
 $user->id();
+
 $user->name();
+
 $user->login();
+
 $user->role();
 ```
 
-### Role Checks
+---
+
+## Role Checks
 
 ```php
 $user->is('admin');
@@ -333,7 +375,20 @@ $user->hasRole(
 );
 ```
 
-### Permission Checks
+Equivalent using the facade:
+
+```php
+Auth::is('admin');
+
+Auth::hasRole(
+    'admin',
+    'manager'
+);
+```
+
+---
+
+## Permission Checks
 
 ```php
 $user->can('appointments.create');
@@ -341,41 +396,61 @@ $user->can('appointments.create');
 $user->cannot('appointments.delete');
 ```
 
-### Dynamic Properties
-
-Any field from the original database row is available:
+Equivalent:
 
 ```php
-$user->email;
+Auth::can('appointments.create');
 
-$user->phone;
-
-$user->created_at;
+Auth::cannot('appointments.delete');
 ```
 
-### Array access:
+---
+
+## Dynamic Properties
+
+Every column from the original database row remains available.
 
 ```php
-$user['email'];
-$user['phone'];
+echo $user->email;
+
+echo $user->phone;
+
+echo $user->created_at;
 ```
 
-### Convert to Array
+---
+
+## Array Access
+
+`AuthUser` implements `ArrayAccess`.
 
 ```php
-$user->toArray();
+echo $user['email'];
+
+echo $user['phone'];
 ```
 
-### Select Fields
+---
+
+## Utility Methods
+
+Convert the authenticated user to an array.
+
+```php
+$array = $user->toArray();
+```
+
+Select only specific fields.
 
 ```php
 $user->only(
     'id',
-    'name'
+    'name',
+    'email'
 );
 ```
 
-### Exclude Fields
+Exclude fields.
 
 ```php
 $user->except(
@@ -383,17 +458,21 @@ $user->except(
 );
 ```
 
+Access the original database row.
 
+```php
+$row = $user->raw();
+```
 
 ---
 
-## Profiles
+# Profiles
 
-Some applications store role-specific data in separate profile tables.
+Many applications store additional information in separate profile tables.
 
 Example:
 
-```txt
+```text
 users
 ├── id
 ├── name
@@ -404,17 +483,19 @@ users
 patients
 ├── id
 ├── user_id
+├── phone
 ├── birth_date
-└── phone
+└── address
 
 professionals
 ├── id
 ├── user_id
 ├── bio
-└── experience
+├── experience
+└── license
 ```
 
-Configure profiles by role:
+Configure the relationship:
 
 ```php
 'profiles' => [
@@ -428,16 +509,17 @@ Configure profiles by role:
         'table' => 'professionals',
         'foreign_key' => 'user_id',
     ],
+
 ],
 ```
 
-Load the authenticated user's profile:
+Retrieve the authenticated profile:
 
 ```php
 $profile = Auth::profile();
 ```
 
-Or through the authenticated user:
+or
 
 ```php
 $profile = Auth::user()?->profile();
@@ -446,28 +528,144 @@ $profile = Auth::user()?->profile();
 Access profile data:
 
 ```php
-echo $profile?->bio;
+echo $profile->bio;
 
-echo $profile?['bio'];
+echo $profile['bio'];
 
-echo $profile?->get('bio');
+echo $profile->get('bio', default: 'no bio');
 ```
 
-Profiles are loaded on demand. They are not automatically merged into `AuthUser`.
+Profiles are loaded lazily and remain independent from `AuthUser`.
+
+This avoids unnecessary database queries and keeps authentication data separate from domain-specific information.
 
 ---
 
-## Diagnostics
+# Authorization (RBAC)
 
-Inspect the current authentication configuration:
+Permissions are configured per role.
+
+Example:
 
 ```php
-print_r(
-    Auth::diagnose()
+return [
+
+    'admin' => [
+
+        '*',
+
+    ],
+
+    'professional' => [
+
+        'appointments.*',
+
+        'patients.view',
+
+        'activities.*',
+
+    ],
+
+    'patient' => [
+
+        'appointments.view',
+
+        'appointments.create',
+
+        'appointments.cancel',
+
+        'profile.view',
+
+        'profile.update',
+
+    ],
+
+];
+```
+
+basically:
+```php
+// structure example
+'role' => [
+    'resource.action',
+    ...
+]
+```
+
+---
+
+## Checking Permissions
+
+```php
+if (Auth::can('appointments.create')) {
+
+}
+```
+
+Negated check:
+
+```php
+if (Auth::cannot('appointments.delete')) {
+
+}
+```
+
+Require a permission:
+
+```php
+Auth::authorize(
+    'appointments.create'
 );
 ```
 
-Example output:
+If authorization fails, an `AuthorizationException` is thrown.
+
+---
+
+## Wildcards
+
+Grant every permission:
+
+```php
+'admin' => [
+
+    '*',
+
+],
+```
+
+Grant every permission within a namespace:
+
+```php
+'professional' => [
+
+    'appointments.*',
+
+],
+```
+
+Which automatically matches:
+
+```text
+appointments.view
+appointments.create
+appointments.update
+appointments.delete
+appointments.cancel
+...
+```
+
+---
+
+# Diagnostics
+
+Inspect the current authentication configuration.
+
+```php
+$result = Auth::diagnose();
+```
+
+Typical output:
 
 ```php
 [
@@ -480,66 +678,119 @@ Example output:
         'ok' => true,
         'message' => 'Table [users] exists.',
     ],
+
+    'login_field_email' => [
+        'ok' => true,
+        'message' => 'Column [email] exists.',
+    ],
+
+    'provider_table' => [
+        'ok' => true,
+        'message' => 'Table [user_providers] exists.',
+    ],
 ]
 ```
 
+The diagnostic tool validates:
+
+* Database connection
+* User table
+* User columns
+* Session configuration
+* Remember Me columns
+* Provider tables
+* Profile mappings
+* Permission configuration
+
 ---
 
-## Exceptions
+# Exceptions
 
-The library provides dedicated exceptions:
+Eril Auth provides dedicated exceptions.
 
 ```php
 Eril\Auth\Exceptions\AuthException
 
-Eril\Auth\Exceptions\ConfigurationException
-
 Eril\Auth\Exceptions\AuthenticationException
 
 Eril\Auth\Exceptions\AuthorizationException
+
+Eril\Auth\Exceptions\ConfigurationException
 ```
 
 Example:
 
 ```php
 try {
-    Auth::authorize('admin.access');
+
+    Auth::authorize('admin.panel');
+
 } catch (AuthorizationException $e) {
-    //
+
+    echo $e->getMessage();
+
 }
 ```
 
 ---
 
-## API Reference
+# API Reference
 
-### Authentication
+## Configuration
 
 ```php
 Auth::configure()
 
 Auth::loadConfig()
+```
 
+---
+
+## Authentication
+
+```php
 Auth::attempt()
 
 Auth::login()
 
+Auth::loginWithProvider()
+
 Auth::logout()
 
+Auth::rememberUser()
+```
+
+---
+
+## Current User
+
+```php
 Auth::check()
+
+Auth::guest()
 
 Auth::user()
 
-Auth::id()
+Auth::profile()
 
-Auth::error()
+Auth::id()
 ```
 
-### Authorization
+---
+
+## Roles
 
 ```php
 Auth::hasRole()
 
+Auth::is()
+```
+
+---
+
+## Permissions
+
+```php
 Auth::can()
 
 Auth::cannot()
@@ -547,27 +798,37 @@ Auth::cannot()
 Auth::authorize()
 ```
 
-### Remember Me
+---
+
+## Utilities
 
 ```php
-Auth::rememberUser()
-```
+Auth::error()
 
-### Diagnostics
-
-```php
 Auth::diagnose()
 ```
 
 ---
 
-## Requirements
+# Out of Scope
 
-* PHP 8.1+
-* PDO Extension
+Eril Auth intentionally focuses on session-based authentication and authorization.
+
+The following features are intentionally **not** included:
+
+* User registration
+* Password reset
+* Email verification
+* OAuth flows
+* JWT authentication
+* WebAuthn / Passkeys
+* Multi-factor authentication (MFA/TOTP)
+* ORM integration
+
+These features are better implemented by your application or by dedicated libraries.
 
 ---
 
-## License
+# License
 
-MIT License.
+Licensed under the MIT License.
