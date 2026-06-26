@@ -3,7 +3,7 @@
 namespace Eril\Auth\Tests;
 
 use Eril\Auth\Auth\AuthManager;
-use Eril\Auth\Authorization\PermissionResolver;
+use Eril\Auth\Authorization\PermissionManager;
 use Eril\Auth\Configuration\AuthConfig;
 use Eril\Auth\Database\ConnectionResolver;
 use Eril\Auth\Session\SessionManager;
@@ -53,7 +53,7 @@ final class PermissionResolverTest extends TestCase
         $this->assertFalse($resolver->can('profile.view'));
     }
 
-    private function resolverForRole(?string $role): PermissionResolver
+    private function resolverForRole(?string $role): PermissionManager
     {
         $config = AuthConfig::fromArray([
             'db' => new PDO('sqlite::memory:'),
@@ -78,6 +78,6 @@ final class PermissionResolverTest extends TestCase
             'role' => $role,
         ]);
 
-        return new PermissionResolver($config, $auth);
+        return new PermissionManager($config, $auth);
     }
 }
