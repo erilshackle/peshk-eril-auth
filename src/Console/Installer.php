@@ -24,6 +24,7 @@ final class Installer
 
         $usersTable = $this->terminal->ask('Users table', 'users');
         $loginField = $this->terminal->ask('Login field', 'email');
+        $loginField = explode(',', $loginField);
         $passwordField = $this->terminal->ask('Password field', 'password');
         $roleField = $this->terminal->ask('Role field', 'role');
 

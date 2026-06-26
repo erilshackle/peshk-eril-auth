@@ -180,7 +180,7 @@ return [
     |
     */
 
-    'permissions' => require __DIR__ . '/permissions.php',
+    'permissions' => @include __DIR__ . '/permissions.php',
 
 ];
 PHP;
